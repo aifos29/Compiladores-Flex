@@ -9,17 +9,18 @@ enum yytokentype {
 	SALTO = 7,
 	BLANCO=8,
 	EOL = 9
-
 };
 int yylval;
-
-
-
+FILE* beamerFile;
+int totalKeyword;
+int totalOperation;
+int totalSymbol;
+int totalConstant;
+int totalIdentificator;
+int totalTokens;
 %}
+
 %%
-
-
-"+"|"-"|"*"|"/" { return OPERATION;}
 
 "auto" {return KEYWORD;}
 "break" {return KEYWORD;}
@@ -54,65 +55,113 @@ int yylval;
 "volatile" {return KEYWORD;}
 "while"    {return KEYWORD;}
 
+"+" { return OPERATION; }
+"-" { return OPERATION; }
+"*" { return OPERATION; }
+"/" { return OPERATION; }
+"<" { return OPERATION; }
+">" { return OPERATION; }
+"=" { return OPERATION; }
+"==" { return OPERATION; }
+"<=" { return OPERATION; }
+">=" { return OPERATION; }
+"!=" { return OPERATION; }
 
-"(" | ")" |"[" |"]"|";"|"<"|">"|"="|"=="|"<="|">="|"!=" {return SYMBOL;}
 
+"(" { return SYMBOL; }
+")" { return SYMBOL; }
+"[" { return SYMBOL; }
+"]" { return SYMBOL; }
+";" { return SYMBOL; }
+"{" { return SYMBOL; }
+"}" { return SYMBOL; }
+"|" { return SYMBOL; }
 
-[0-9]+ { yylval = atoi(yytext);return CONSTANT; }
+[0-9]+ { yylval = atoi(yytext); return CONSTANT; }
 
 "_"*[A-z]+"_"*[0-9]* {return IDENTIFICATOR;}
 
-
-
-
-
 \n { return SALTO; }
+
 [ \t] { return BLANCO; }
 
 <<EOF>> { return EOL;}
 
 %%
 
-void latex(char * ide){
-	printf ("Esto es  %s Valor = %s ",ide,yytext);
+void startBeamer(){
+  beamerFile = fopen( "beamer.tex", "w+" );
+  fprintf(beamerFile,"\\documentclass{beamer} \n");
+  fprintf(beamerFile, "\\usepackage{color} \n" );
+  fprintf(beamerFile, "\\usepackage[utf8]{inputenc} \n" );
+  fprintf(beamerFile,"\\title{Primer Semestre - Proyecto 2 Analizador Lexico} \n");
+  fprintf(beamerFile,"\\author { \\texttt { Amanda Solano Astorga } \\texttt { Yasiell Vallejos Gómez } } \n");
+  fprintf(beamerFile,"\\date{\\today}\n");
+  fprintf(beamerFile,"\\date{\\today}\n");
+  fprintf(beamerFile,"\\begin{document} \n");
+  fprintf(beamerFile,"\\maketitle \n");
+  fprintf(beamerFile,"\\begin{frame} \n");
+  fprintf(beamerFile,"\\frametitle{Programa Fuente} \n");
+}
 
+void endBeamer(){
+  fprintf(beamerFile,"\\end{frame} \n");
+  fprintf(beamerFile,"\\end{document}");
+  fclose(beamerFile);
+  system("pdflatex beamer.tex");
+  system("evince beamer.pdf");
+}
 
+void writeBeamer(char *_color, char *_word){
+  fprintf(beamerFile, "\\textcolor{%s}{ %s } ", _color, _word);
 }
 
 void main(int argc, char **argv)
 {
 	int tok;
-	yyin = fopen ("prueba.txt","r+");
-	tok =yylex();
+	yyin = fopen ("prueba.c","r+");
+  startBeamer();
+	tok = yylex();
 	while(tok!=EOL){
 		switch (tok){
-			
-			case 1:
-				latex("CONSTANT");
+
+			case CONSTANT:
+				writeBeamer("blue", yytext);
+        totalConstant++;
 				break;
-			case 2:
-				printf("KEYWORD %s",yytext);
+			case KEYWORD:
+				writeBeamer("green", yytext);
+        totalKeyword++;
 				break;
-			case 3:
-				latex("OPERATION");
+			case OPERATION:
+        if (strcmp(yytext,"<") == 0){
+          writeBeamer("black", "$<$");
+        }
+        if (strcmp(yytext,">") == 0){
+          writeBeamer("black", "$>$");
+        }
+        else{
+          writeBeamer("black", yytext);
+        }
+        totalOperation++;
+        break;
 			case SALTO:
-				printf("\n");
+        fprintf(beamerFile,"\\newline");
 				break;
 			case IDENTIFICATOR:
-				latex("IDENTIFICATOR");
-				break;
+        writeBeamer("orange", yytext);
+        totalIdentificator++;
+        break;
 			case SYMBOL:
-				latex("SPECIAL SYMBOL");
-		
+        writeBeamer("red", yytext);
+        totalSymbol++;
+        break;
 			default:
 				break;
+		}
+    totalTokens++;
+		tok = yylex();
 
-
-
-
-
-	
 	}
-	tok = yylex();
-}
+  endBeamer();
 }
