@@ -94,6 +94,7 @@ void startBeamer(){
   fprintf(beamerFile,"\\documentclass{beamer} \n");
   fprintf(beamerFile, "\\usepackage{color} \n" );
   fprintf(beamerFile, "\\usepackage[utf8]{inputenc} \n" );
+  fprintf(beamerFile, "\\usepackage{pgfplots}\n" );
   fprintf(beamerFile,"\\title{Primer Semestre - Proyecto 2 Analizador Lexico} \n");
   fprintf(beamerFile,"\\author { \\texttt { Amanda Solano Astorga } \\texttt { Yasiell Vallejos Gómez } } \n");
   fprintf(beamerFile,"\\date{\\today}\n");
@@ -105,7 +106,6 @@ void startBeamer(){
 }
 
 void endBeamer(){
-  fprintf(beamerFile,"\\end{frame} \n");
   fprintf(beamerFile,"\\end{document}");
   fclose(beamerFile);
   system("pdflatex beamer.tex");
@@ -116,6 +116,27 @@ void writeBeamer(char *_color, char *_word){
   fprintf(beamerFile, "\\textcolor{%s}{ %s } ", _color, _word);
 }
 
+void createHistogram(){
+  fprintf(beamerFile,"\\end{frame} \n");
+  fprintf(beamerFile,"\\begin{frame} \n");
+  fprintf(beamerFile,"\\frametitle{Histograma} \n");
+  fprintf(beamerFile,"\\pgfplotsset{compat=1.6} \n");
+  fprintf(beamerFile,"\\begin{figure}");
+  fprintf(beamerFile,"\\centering");
+  fprintf(beamerFile,"\\begin{tikzpicture}");
+  fprintf(beamerFile,"\\begin{axis}[");
+  fprintf(beamerFile,"ybar,enlargelimits=0.15,");
+  fprintf(beamerFile,"legend style={at={(0.5,-0.2)}, anchor=north,legend columns=-1}, ylabel={Lexemas},");
+  fprintf(beamerFile,"symbolic x coords={Keyword,Operation,Symbol,Constant,Identificator},");
+  fprintf(beamerFile,"xtick=data,nodes near coords,nodes near coords align={vertical},");
+  fprintf(beamerFile,"x tick label style={rotate=45,anchor=east},]");
+  fprintf(beamerFile,"\\addplot coordinates {(Keyword,%i) (Operation,%i)",totalKeyword,totalOperation);
+  fprintf(beamerFile,"(Symbol,%i) (Constant,%i) (Identificator,%i)};",totalSymbol,totalConstant,totalIdentificator);
+  fprintf(beamerFile,"\\end{axis}");
+  fprintf(beamerFile,"\\end{tikzpicture}");
+  fprintf(beamerFile,"\\end{figure}");
+  fprintf(beamerFile,"\\end{frame} \n");
+}
 void main(int argc, char **argv)
 {
 	int tok;
@@ -130,18 +151,18 @@ void main(int argc, char **argv)
         totalConstant++;
 				break;
 			case KEYWORD:
-				writeBeamer("green", yytext);
+				writeBeamer("purple", yytext);
         totalKeyword++;
 				break;
 			case OPERATION:
         if (strcmp(yytext,"<") == 0){
-          writeBeamer("black", "$<$");
+          writeBeamer("green", "$<$");
         }
         if (strcmp(yytext,">") == 0){
-          writeBeamer("black", "$>$");
+          writeBeamer("green", "$>$");
         }
         else{
-          writeBeamer("black", yytext);
+          writeBeamer("green", yytext);
         }
         totalOperation++;
         break;
@@ -163,5 +184,6 @@ void main(int argc, char **argv)
 		tok = yylex();
 
 	}
+  createHistogram();
   endBeamer();
 }
