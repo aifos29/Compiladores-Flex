@@ -137,53 +137,115 @@ void createHistogram(){
   fprintf(beamerFile,"\\end{figure}");
   fprintf(beamerFile,"\\end{frame} \n");
 }
+
+
+void createPastel(float _symbol,float _keyword,float _operation,float _constant,float _identificator){
+  fprintf(beamerFile,"\\begin{frame}{Diagrama Pastel} \n");
+	fprintf(beamerFile,"\\pgfplotsset{compat=1.6} \n");
+	fprintf(beamerFile,"\\def\\angle{0}");
+	fprintf(beamerFile,"\\def\\radius{3}");
+	fprintf(beamerFile,"\\def\\cyclelist{{\"purple\",\"green\",\"red\",\"blue\",\"orange\"}}");
+	fprintf(beamerFile,"\\newcount\\cyclecount \\cyclecount=-1");
+	fprintf(beamerFile,"\\newcount\\ind \\ind=-1");
+	fprintf(beamerFile,"\\begin{tikzpicture}");
+	fprintf(beamerFile,"\\foreach \\percent/ \\name in {");
+	fprintf(beamerFile,"%.2f/Keyword,",_keyword);
+	fprintf(beamerFile,"%.2f/Operation,",_operation);
+	fprintf(beamerFile,"%.2f/Symbol,",_symbol);
+	fprintf(beamerFile,"%.2f/Constant,",_constant);
+	fprintf(beamerFile,"%.2f/Identificator",_identificator);
+	fprintf(beamerFile,"} {\\ifx\\percent\\empty\\else");
+	fprintf(beamerFile,"\\global\\advance\\cyclecount by 1");
+	fprintf(beamerFile,"\\global\\advance\\ind by 1");
+	fprintf(beamerFile,"\\ifnum4<\\cyclecount");
+	fprintf(beamerFile,"\\global\\cyclecount=0");
+	fprintf(beamerFile,"\\global\\ind=0");
+	fprintf(beamerFile,"\\fi");
+	fprintf(beamerFile,"\\pgfmathparse{\\cyclelist[\\the\\ind]}");
+	fprintf(beamerFile,"\\edef\\color{\\pgfmathresult}");
+	fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius)");
+	fprintf(beamerFile,"arc (\\angle:\\angle+\\percent*3.7:\\radius) -- cycle;");
+	fprintf(beamerFile,"\\node at (\\angle+0.5*\\percent*3.7:0.7*\\radius) {\\percent\\,\\%};at (\\angle+0.5*\\percent*3.7:\\radius) {};");
+	fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.7}");
+	fprintf(beamerFile,"\\xdef\\angle{\\pgfmathresult}");
+	fprintf(beamerFile,"\\fi};");
+	fprintf(beamerFile,"\\end{tikzpicture}");
+  fprintf(beamerFile,"\\end{frame} \n");
+}
+
+void getPorcentage(){
+	float symbol = (totalSymbol * 100)/ totalTokens;
+	float keyword= (totalKeyword * 100)/ totalTokens;
+	float operation= (totalOperation * 100)/ totalTokens;
+	float constant= (totalConstant * 100)/ totalTokens;
+	float identificator= (totalIdentificator * 100)/ totalTokens;
+
+	createPastel(symbol,keyword,operation,constant,identificator);
+}
+
 void main(int argc, char **argv)
 {
 	int tok;
 	yyin = fopen ("prueba.c","r+");
   startBeamer();
 	tok = yylex();
-	while(tok!=EOL){
-		switch (tok){
+	int totalLines = 1;
 
+	while(tok!=EOL){
+
+		switch (tok){
 			case CONSTANT:
 				writeBeamer("blue", yytext);
         totalConstant++;
+				totalTokens++;
 				break;
 			case KEYWORD:
 				writeBeamer("purple", yytext);
         totalKeyword++;
+				totalTokens++;
 				break;
 			case OPERATION:
         if (strcmp(yytext,"<") == 0){
-          writeBeamer("green", "$<$");
+					fprintf(beamerFile, "\\textcolor{%s}{%s}", "green","$<$");
         }
         if (strcmp(yytext,">") == 0){
-          writeBeamer("green", "$>$");
+					fprintf(beamerFile, "\\textcolor{%s}{%s}", "green","$>$");
         }
         else{
           writeBeamer("green", yytext);
         }
         totalOperation++;
+				totalTokens++;
         break;
 			case SALTO:
         fprintf(beamerFile,"\\newline");
+				totalLines++;
 				break;
 			case IDENTIFICATOR:
         writeBeamer("orange", yytext);
         totalIdentificator++;
+				totalTokens++;
         break;
 			case SYMBOL:
-        writeBeamer("red", yytext);
+				if (strcmp(yytext,"}") == 0){
+          fprintf(beamerFile, "\\textcolor{%s}{\\} }\n", "red");
+        }
+        if (strcmp(yytext,"{") == 0){
+          fprintf(beamerFile, "\\textcolor{%s}{\\{\n", "red");;
+        }
+        else{
+        	writeBeamer("red", yytext);
+				}
         totalSymbol++;
+				totalTokens++;
         break;
 			default:
 				break;
 		}
-    totalTokens++;
 		tok = yylex();
 
 	}
   createHistogram();
+	getPorcentage();
   endBeamer();
 }
