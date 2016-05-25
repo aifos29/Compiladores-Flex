@@ -8,7 +8,8 @@ enum yytokentype {
 	SYMBOL =6,
 	SALTO = 7,
 	BLANCO=8,
-	EOL = 9
+	EOL = 9,
+	ERROR = 10,
 };
 int yylval;
 FILE* beamerFile;
@@ -18,6 +19,7 @@ int totalSymbol;
 int totalConstant;
 int totalIdentificator;
 int totalTokens;
+int totalError;
 %}
 
 %%
@@ -87,22 +89,36 @@ int totalTokens;
 
 <<EOF>> { return EOL;}
 
+. { return ERROR;}
+
 %%
 
 void startBeamer(){
-  beamerFile = fopen( "beamer.tex", "w+" );
-  fprintf(beamerFile,"\\documentclass{beamer} \n");
-  fprintf(beamerFile, "\\usepackage{color} \n" );
-  fprintf(beamerFile, "\\usepackage[utf8]{inputenc} \n" );
-  fprintf(beamerFile, "\\usepackage{pgfplots}\n" );
-  fprintf(beamerFile,"\\title{Primer Semestre - Proyecto 2 Analizador Lexico} \n");
-  fprintf(beamerFile,"\\author { \\texttt { Amanda Solano Astorga } \\texttt { Yasiell Vallejos Gómez } } \n");
-  fprintf(beamerFile,"\\date{\\today}\n");
-  fprintf(beamerFile,"\\date{\\today}\n");
-  fprintf(beamerFile,"\\begin{document} \n");
-  fprintf(beamerFile,"\\maketitle \n");
-  fprintf(beamerFile,"\\begin{frame} \n");
-  fprintf(beamerFile,"\\frametitle{Programa Fuente} \n");
+beamerFile = fopen( "beamer.tex", "w+" );
+fprintf(beamerFile,"\\documentclass{beamer} \n");
+fprintf(beamerFile, "\\usepackage{color} \n" );
+fprintf(beamerFile, "\\usepackage[utf8]{inputenc} \n" );
+fprintf(beamerFile, "\\usepackage{pgfplots}\n" );
+fprintf(beamerFile,"\\title{Primer Semestre - Proyecto 2 Analizador Lexico} \n");
+fprintf(beamerFile,"\\author { \\texttt { Amanda Solano Astorga } \\texttt { Yasiell Vallejos Gómez } } \n");
+fprintf(beamerFile,"\\date{\\today}\n");
+fprintf(beamerFile,"\\date{\\today}\n");
+fprintf(beamerFile,"\\begin{document} \n");
+fprintf(beamerFile,"\\maketitle \n");
+fprintf(beamerFile,"\\begin{frame}[allowframebreaks]");
+fprintf(beamerFile,"\\frametitle{ Proceso de Scanning y Herramienta Flex} \n \n");
+fprintf(beamerFile,"El analisis lexico es el encargado de separar por tokens la cadena de texto ingresada.");
+fprintf(beamerFile,"Un token es una unidad lexica que tiene coherencia en un lenguaje de programación. \\newline \n");
+fprintf(beamerFile,"En el caso del lenguaje de programación C, el lenguaje contiene 5 tokens: \\newline \n");
+fprintf(beamerFile,"String : Cadenas de texto. \\newline \n");
+fprintf(beamerFile,"Constante: Hace referencia a los números. \\newline \n");
+fprintf(beamerFile,"Identificadores: Son aquellas palabras que no son parte del lenguaje \\newline \n");
+fprintf(beamerFile,"Palabras especiales: Palabras que son usadas por el lenguaje \\newline \n");
+fprintf(beamerFile,"Simboles especiales: Comas, parentesis entre otros \\newline \n");
+fprintf(beamerFile,"Operadores: Signos aritmetricos basicos \\newline \n");
+fprintf(beamerFile,"\\end{frame} \n");
+fprintf(beamerFile,"\\begin{frame}[allowframebreaks] \n");
+fprintf(beamerFile,"\\frametitle{Programa Fuente} \n");
 }
 
 void endBeamer(){
@@ -127,11 +143,11 @@ void createHistogram(){
   fprintf(beamerFile,"\\begin{axis}[");
   fprintf(beamerFile,"ybar,enlargelimits=0.15,");
   fprintf(beamerFile,"legend style={at={(0.5,-0.2)}, anchor=north,legend columns=-1}, ylabel={Lexemas},");
-  fprintf(beamerFile,"symbolic x coords={Keyword,Operation,Symbol,Constant,Identificator},");
+  fprintf(beamerFile,"symbolic x coords={Keyword,Operation,Symbol,Constant,Identificator,Error},");
   fprintf(beamerFile,"xtick=data,nodes near coords,nodes near coords align={vertical},");
   fprintf(beamerFile,"x tick label style={rotate=45,anchor=east},]");
-  fprintf(beamerFile,"\\addplot coordinates {(Keyword,%i) (Operation,%i)",totalKeyword,totalOperation);
-  fprintf(beamerFile,"(Symbol,%i) (Constant,%i) (Identificator,%i)};",totalSymbol,totalConstant,totalIdentificator);
+  fprintf(beamerFile,"\\addplot[ybar,fill=blue] coordinates {(Keyword,%i) (Operation,%i)",totalKeyword,totalOperation);
+  fprintf(beamerFile,"(Symbol,%i) (Constant,%i) (Identificator,%i) (Error,%i)};",totalSymbol,totalConstant,totalIdentificator,totalError);
   fprintf(beamerFile,"\\end{axis}");
   fprintf(beamerFile,"\\end{tikzpicture}");
   fprintf(beamerFile,"\\end{figure}");
@@ -139,34 +155,35 @@ void createHistogram(){
 }
 
 
-void createPastel(float _symbol,float _keyword,float _operation,float _constant,float _identificator){
+void createPastel(int _symbol,int _keyword,int _operation,int _constant,int _identificator,int _error){
   fprintf(beamerFile,"\\begin{frame}{Diagrama Pastel} \n");
-	fprintf(beamerFile,"\\pgfplotsset{compat=1.6} \n");
 	fprintf(beamerFile,"\\def\\angle{0}");
-	fprintf(beamerFile,"\\def\\radius{3}");
-	fprintf(beamerFile,"\\def\\cyclelist{{\"purple\",\"green\",\"red\",\"blue\",\"orange\"}}");
+	fprintf(beamerFile,"\\def\\radius{2}");
+	fprintf(beamerFile,"\\def\\labelradius{3}");
+	fprintf(beamerFile,"\\def\\cyclelist{{\"purple\",\"green\",\"olive\",\"blue\",\"orange\",\"red\"}}");
+	fprintf(beamerFile,"\\centering");
 	fprintf(beamerFile,"\\newcount\\cyclecount \\cyclecount=-1");
 	fprintf(beamerFile,"\\newcount\\ind \\ind=-1");
 	fprintf(beamerFile,"\\begin{tikzpicture}");
-	fprintf(beamerFile,"\\foreach \\percent/ \\name in {");
-	fprintf(beamerFile,"%.2f/Keyword,",_keyword);
-	fprintf(beamerFile,"%.2f/Operation,",_operation);
-	fprintf(beamerFile,"%.2f/Symbol,",_symbol);
-	fprintf(beamerFile,"%.2f/Constant,",_constant);
-	fprintf(beamerFile,"%.2f/Identificator",_identificator);
+	fprintf(beamerFile,"\\foreach \\percent/\\name in {");
+	fprintf(beamerFile,"%i/Keyw.,",_keyword);
+	fprintf(beamerFile,"%i/Operat.,",_operation);
+	fprintf(beamerFile,"%i/Symb.,",_symbol);
+	fprintf(beamerFile,"%i/Const.,",_constant);
+	fprintf(beamerFile,"%i/Ident.,",_identificator);
+	fprintf(beamerFile,"%i/Error",_error);
 	fprintf(beamerFile,"} {\\ifx\\percent\\empty\\else");
 	fprintf(beamerFile,"\\global\\advance\\cyclecount by 1");
 	fprintf(beamerFile,"\\global\\advance\\ind by 1");
-	fprintf(beamerFile,"\\ifnum4<\\cyclecount");
+	fprintf(beamerFile,"\\ifnum6<\\cyclecount");
 	fprintf(beamerFile,"\\global\\cyclecount=0");
 	fprintf(beamerFile,"\\global\\ind=0");
 	fprintf(beamerFile,"\\fi");
 	fprintf(beamerFile,"\\pgfmathparse{\\cyclelist[\\the\\ind]}");
 	fprintf(beamerFile,"\\edef\\color{\\pgfmathresult}");
-	fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius)");
-	fprintf(beamerFile,"arc (\\angle:\\angle+\\percent*3.7:\\radius) -- cycle;");
-	fprintf(beamerFile,"\\node at (\\angle+0.5*\\percent*3.7:0.7*\\radius) {\\percent\\,\\%};at (\\angle+0.5*\\percent*3.7:\\radius) {};");
-	fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.7}");
+	fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius) arc (\\angle:\\angle+\\percent*3.6:\\radius) -- cycle;");
+	fprintf(beamerFile,"\\draw[draw=gray, shorten >=2pt] (\\angle+0.5*\\percent*3.6:\\labelradius) node {\\name~[\\percent\\%%]} edge (\\angle+0.5*\\percent*3.6:\\radius);");
+	fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.6}");
 	fprintf(beamerFile,"\\xdef\\angle{\\pgfmathresult}");
 	fprintf(beamerFile,"\\fi};");
 	fprintf(beamerFile,"\\end{tikzpicture}");
@@ -174,13 +191,14 @@ void createPastel(float _symbol,float _keyword,float _operation,float _constant,
 }
 
 void getPorcentage(){
-	float symbol = (totalSymbol * 100)/ totalTokens;
-	float keyword= (totalKeyword * 100)/ totalTokens;
-	float operation= (totalOperation * 100)/ totalTokens;
-	float constant= (totalConstant * 100)/ totalTokens;
-	float identificator= (totalIdentificator * 100)/ totalTokens;
+	int symbol = (totalSymbol * 100)/ totalTokens;
+	int keyword= (totalKeyword * 100)/ totalTokens;
+	int operation= (totalOperation * 100)/ totalTokens;
+	int constant= (totalConstant * 100)/ totalTokens;
+	int identificator= (totalIdentificator * 100)/ totalTokens;
+	int error = (totalError * 100)/ totalTokens;
 
-	createPastel(symbol,keyword,operation,constant,identificator);
+	createPastel(symbol,keyword,operation,constant,identificator,error);
 }
 
 void main(int argc, char **argv)
@@ -189,7 +207,6 @@ void main(int argc, char **argv)
 	yyin = fopen ("prueba.c","r+");
   startBeamer();
 	tok = yylex();
-	int totalLines = 1;
 
 	while(tok!=EOL){
 
@@ -218,8 +235,7 @@ void main(int argc, char **argv)
 				totalTokens++;
         break;
 			case SALTO:
-        fprintf(beamerFile,"\\newline");
-				totalLines++;
+        fprintf(beamerFile,"\\newline \n");
 				break;
 			case IDENTIFICATOR:
         writeBeamer("orange", yytext);
@@ -228,17 +244,21 @@ void main(int argc, char **argv)
         break;
 			case SYMBOL:
 				if (strcmp(yytext,"}") == 0){
-          fprintf(beamerFile, "\\textcolor{%s}{\\} }\n", "red");
+          fprintf(beamerFile, "\\textcolor{%s}{\\} }\n", "olive");
         }
         if (strcmp(yytext,"{") == 0){
-          fprintf(beamerFile, "\\textcolor{%s}{\\{\n", "red");;
+          fprintf(beamerFile, "\\textcolor{%s}{\\{\n", "olive");;
         }
         else{
-        	writeBeamer("red", yytext);
+        	writeBeamer("olive", yytext);
 				}
         totalSymbol++;
 				totalTokens++;
         break;
+			case ERROR:
+				writeBeamer("red", yytext);
+				totalError++;
+				break;
 			default:
 				break;
 		}
