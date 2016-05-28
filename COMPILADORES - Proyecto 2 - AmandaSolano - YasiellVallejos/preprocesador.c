@@ -6,15 +6,18 @@
 
 
 char token_buffer[33];
-FILE *archivo;
+FILE *original;
 FILE *salida;
+FILE * tmp ;
 int in_char,c;
+int raro=0;
 
+int espace = 0;
 
 //Se definen los diferentes tipos a tratar
 typedef enum tipos_palabras{
 	//ANYWORD ES IGUAL A CUALQUIER VALOR.
-	INCLUDE,DEFINE,FIN, ANYWORD, PUNTUACTION
+	INCLUDE,DEFINE,FIN, ANYWORD, PUNTUACTION,ESPACIO
 } palabras;
 
 
@@ -51,6 +54,7 @@ palabras reservado(){
 	//Revise el token_buffer y si este es una palabra reservada retorna el token al que pertenece
 
 	if (strcmp(token_buffer,"#define")==0){
+		raro=1;
 		return DEFINE;
 	}
 	if (strcmp(token_buffer,"#include")==0){
@@ -61,7 +65,16 @@ palabras reservado(){
 	}
 }
 
-palabras escaner(void){
+void imprimir_espacios(){
+	if (c==10){
+		fprintf(tmp,"\n");
+		}
+	if (c==32){
+		fprintf(tmp,"  ");
+		}
+}
+
+palabras escaner(FILE * archivo){
 	//Obtiene los tokens del texto
 
 
@@ -74,8 +87,10 @@ palabras escaner(void){
 		in_char=fgetc(archivo);
 
 		//Si el token es espacio lo ignoro
-		if (isspace(in_char))
-			continue; /*do nothing */
+		if (isspace(in_char)){
+			c=in_char;
+			return ESPACIO;
+		}
 
 		//Si el token es un digito,minuscula,mayuscula o de puntuacion se agregan al buffer_char para imprimirlos
 		else if (in_char==35){
@@ -105,6 +120,7 @@ palabras escaner(void){
 				buffer_char(in_char);
 			}
 
+
 			for (c= fgetc(archivo);isalnum(c)||isspace(c)||isgraph(c);c=fgetc(archivo)){
 				if (isspace(c)){
 					return reservado();
@@ -128,18 +144,53 @@ palabras escaner(void){
 	}
 
 
-void asignar_nombre(char * nombre){
+int posicion(char ** arreglo){
+	int pos = cont;
+	for (int i=0;i<cont;i++){
+		if (strcmp(arreglo[i],token_buffer)==0){
+			pos=i;
+		}
+		
+	}
+	return pos;
+}
+
+void asignar_nombre(char * nombre,FILE * archivo){
 	//Almacena el nombre de la variable definida por el #define
 
-
-    escaner();
 	strcpy(nombre,token_buffer);
 }
 
-void asignar_valor(char * valor){
+void asignar_valor(char * valor,FILE * archivo){
 	//Almacena el valor de la variable definida por el #define
-	escaner();
-	strcpy(valor,token_buffer);
+	int no =0;
+	palabras palabras=escaner(archivo);
+	while (palabras==ESPACIO){
+		palabras=escaner(archivo);
+	}
+	while (palabras==ANYWORD || palabras == PUNTUACTION){
+
+	if (palabras==PUNTUACTION){
+		if (strlen(token_buffer)==0){
+			buffer_char(c);
+			strcat(valor,token_buffer);
+		}
+		else{
+			strcat(valor,token_buffer);
+			clear_buffer();
+			buffer_char(c);
+			strcat(valor,token_buffer);
+		}
+	}
+
+	if (palabras=ANYWORD)
+	{
+		strcat(valor,token_buffer);
+	}
+
+	palabras=escaner(archivo);
+
+}
 }
 
 void adjuntar(char * valor){
@@ -154,157 +205,35 @@ void adjuntar(char * valor){
 }
 
 
-void cambiador(char **_nombre,char **_valor){
+void incluir_include(FILE * archivo){
 	//Se encarga de leer el archivo de nuevo y asignar los valores almacenados segun el #define
 
-	rewind(archivo);
-	int not_define=0;
-	palabras palabras = escaner();
-	int _estaDefinido=0;
-
-	while (palabras!=FIN){
-		switch(palabras){
-			case DEFINE:
-				not_define=1;
-				escaner();
-				escaner();
-				break;
-			case INCLUDE:
-				printf("%s ",token_buffer);
-				break;
-
-			//Si es cualquier palabra busca alguna coincidencia con los valores definidos para sustituir
-			case ANYWORD:
-				not_define=0;
-				_estaDefinido = 0;
-				int _indice;
-				for (_indice=0;_indice<cont;_indice++){
-					if (strcmp(token_buffer,_nombre[_indice])==0){
-						printf("%s", _valor[_indice]);
-						_estaDefinido = 1;
-						break;
-					}
-				}
-				//Si no esta definido solo imprimo
-				if (_estaDefinido == 0){
-					printf("%s",token_buffer);
-					break;
-				}
-				break;
-			case PUNTUACTION:
-				not_define=0;
-				if (strlen(token_buffer)==0){
-					buffer_char(c);
-					printf("%s",token_buffer);
-					break;
-				}
-				else{
-					_estaDefinido = 0;
-				int _indice;
-				for (_indice=0;_indice<cont;_indice++){
-					if (strcmp(token_buffer,_nombre[_indice])==0){
-						printf("%s", _valor[_indice]);
-						_estaDefinido = 1;
-						
-					}
-				}
-				//Si no esta definido solo imprimo
-				if (_estaDefinido == 0){
-					printf("%s",token_buffer);
-					
-				}
-					clear_buffer();
-					buffer_char(c);
-					printf("%s", token_buffer);
-					break;
-
-				}
-
-		}
-			if (not_define==0){
-				if (c==10){
-					printf("\n");
-				}
-				if (c==32){
-					printf(" ");
-				}}
-
-		palabras=escaner();
-	}
-}
-
-int copiar(char **_usuario,char **_locales){
-	int continuar=0;
-	char buffer[2048];               /* El buffer para guardar lo que leo */ 
-	int cantidad;
-	FILE * nuevo =fopen("primer.txt","wb");
-	int u=0;
-	for (int i=0;i<_totalInclude;i++){
-		//fprintf(nuevo, "#include<%s>\n",_locales[i]);
-	}
-	while (continuar==0){
-		FILE * actual = fopen(_locales[u],"rb");
-  	    while (! feof(actual) )
-    	{
-      /* Leo datos: cada uno de 1 byte, todos los que me caben */
-     	 cantidad = fread( buffer, 1, sizeof(buffer),actual);
-      /* Escribo tantos como haya leído */
-     	 fwrite(buffer, 1, cantidad, nuevo);
-    	}
- 
- 	 	fclose(actual);
- 	 	u++;
- 	 	if (u==_totalIncludeUsuario){
- 	 		continuar=1;
- 	 	}
-	}
-	fclose(nuevo);
-	
-	_totalIncludeUsuario=0;
-
-}
-
-
-void reconocedor(){
-	//Se encarga de obtener los nombres y valores definidos por el #define
-	rewind(archivo);
-	char guardar[33];
-	char guardar2[33];
 	char fichero[33];
-	char guardar_include[33];
-	char *nombre[_totalDefine];
-	char *valor[_totalDefine];
-	char *locales[_totalInclude];
-	char *externos[_totalIncludeUsuario];
-	int contdefine=0;
-	int continclude1=0;
-	int continclude2=0;
-//	char *archivo_include[include];
-
-	palabras palabras = escaner();
-
+	int not_define=0;
+	palabras palabras = escaner(archivo);
+	int _estaDefinido=0;
+	int signo_puntuacion = 0;
 
 	while (palabras!=FIN){
 
 		switch(palabras){
 			case DEFINE:
-				//No se pasa con el & debido a que la estructura ya es *guardar
-				asignar_nombre(guardar);
-				nombre[contdefine]=strdup(guardar);
+				if (raro==1){
+				escaner(archivo);
+				fprintf(tmp,"#define %s ",token_buffer);
 
-				asignar_valor(guardar2);
-				valor[contdefine]=strdup(guardar2);
-
-				contdefine ++;
-
+				escaner(archivo);
+				fprintf(tmp," %s \n",token_buffer);
+				raro=0;
+			}
 				break;
 			case INCLUDE:
-				memset(fichero, '\0', sizeof(fichero));
-				palabras = escaner();
+						memset(fichero, '\0', sizeof(fichero));
+				palabras = escaner(archivo);
 				int continuar =0;
 				if (c==34){
 					
-					palabras=escaner();
+					palabras=escaner(archivo);
 					while (continuar==0){
 
 
@@ -314,7 +243,7 @@ void reconocedor(){
 							buffer_char(c);
 							adjuntar(fichero);
 						}
-						palabras=escaner();
+						palabras=escaner(archivo);
 						if (c==34){
 							adjuntar(fichero);
 							continuar=1;
@@ -322,14 +251,15 @@ void reconocedor(){
 						
 						
 					}
-					
-					locales[continclude1]=strdup(fichero);
-					printf("Locales %s\n",locales[continclude1] );
-					continclude1++;
 
-				
+					FILE * x = fopen(fichero,"r+");
+
+					incluir_include (x);
+					break;
+
+
 				}
-				if (c==60){
+					if (c==60){
 					while (continuar==0){
 						adjuntar(fichero);
 						if (c==46){
@@ -337,57 +267,175 @@ void reconocedor(){
 							buffer_char(c);
 							adjuntar(fichero);
 						}
-						palabras=escaner();
+						palabras=escaner(archivo);
 						if (c==62){
 							adjuntar(fichero);
 							continuar=1;
 						}
 
 						
+
+						
 					}
-					externos[continclude2]=strdup(fichero);
-					printf("Externos %s\n",externos[continclude2] );
-					continclude2 ++;
+					fprintf(tmp,"#include <%s> \n",fichero);
+				}
+				break;
+				
+			case ANYWORD:
+					fprintf(tmp,"%s",token_buffer);
+					break;
+					
+				break;
+			case PUNTUACTION:
+				signo_puntuacion=0;
+				if (strlen(token_buffer)==0){
+					buffer_char(c);
+					fprintf(tmp,"%s",token_buffer);
+					break;
+				}
+				else{
+					_estaDefinido = 0;
+		
+				//Si no esta definido solo imprimo
+				if (_estaDefinido == 0){
+					fprintf(tmp,"%s",token_buffer);
+					
+				
+					clear_buffer();
+					buffer_char(c);
+					fprintf(tmp,"%s", token_buffer);
+					break;
+
 				}
 
+			case ESPACIO:
+				imprimir_espacios();
 
+				default:
+					break;
 
-				break;
-
-			default:
-				break;
 		}
-		palabras = escaner();
-	}
-
+			
+				
+}
+		imprimir_espacios();
+				
+		palabras=escaner(archivo);
 	
-	copiar(externos,locales);
-	//cambiador(nombre,valor);
+}
+
 
 }
 
-void contador (){
-	palabras palabras = escaner();
+void contador (FILE * archivo){
+	rewind(archivo);
+	palabras palabras = escaner(archivo);
 	while (palabras!=FIN){
 		switch(palabras){
 		case DEFINE:
+			if (raro==1){
 			_totalDefine ++;
-			break;
-		case INCLUDE:
-			palabras=escaner();
-			if (palabras==PUNTUACTION){
-				if (c==60){
-					_totalInclude ++;
-				}
-				if (c==34){
-					_totalIncludeUsuario ++;
-				}
+			raro=0;
 			}
 			break;
-		}
-		palabras=escaner();
+		
 
-	}   }
+	}
+	palabras=escaner(archivo);   
+}
+}
+
+
+
+
+void reconocedor(FILE * archivo,FILE * tmp){
+	//Se encarga de obtener los nombres y valores definidos por el #define
+	rewind(archivo);
+	int _estaDefinido=0;
+	char guardar[33];
+	char guardar2[33];
+	char *nombre[_totalDefine];
+	char *valor[_totalDefine];
+	int pos; 
+	palabras palabras = escaner(archivo);
+	int esta=0;
+
+	while (palabras!=FIN){
+	
+		switch(palabras){
+			case DEFINE:
+				//No se pasa con el & debido a que la estructura ya es *guardar
+				if (raro==1){
+				memset(guardar2, '\0', sizeof(guardar2));
+				escaner(archivo);
+				pos= posicion(nombre);
+				asignar_nombre(guardar,archivo);
+				nombre[pos]=strdup(guardar);
+				
+				asignar_valor(guardar2,archivo);
+				valor[pos]=strdup(guardar2);
+
+				if (pos==cont){
+					cont ++;
+				}
+				raro=0;
+			}
+			break;
+	case ANYWORD:
+				esta =0;
+				for (int i=0;i<cont;i++){
+					if (strcmp(nombre[i],token_buffer)){
+						fprintf(tmp, "%s",valor [i]);
+						esta=1;
+					}
+				}
+				if (esta==0){
+					fprintf(tmp, "%s", token_buffer);
+				}
+				break;
+					
+			case PUNTUACTION:
+				//signo_puntuacion=0;
+				printf("%d\n",strlen(token_buffer) );
+				if (strlen(token_buffer)==0){
+					buffer_char(c);
+					fprintf(tmp,"%s",token_buffer);
+					break;
+				}
+				else{
+					_estaDefinido = 0;
+		
+				//Si no esta definido solo imprimo
+				if (_estaDefinido == 0){
+					fprintf(tmp,"%s",token_buffer);
+					
+				
+					clear_buffer();
+					buffer_char(c);
+					fprintf(tmp,"%s", token_buffer);
+					break;
+
+				}
+				break;
+			}
+
+			case ESPACIO:
+				imprimir_espacios();
+				break;
+				default:
+					break;
+			
+		
+	}
+
+	palabras = escaner(archivo);
+	
+	//Llamamos a cambiador para reescribir el texto por su respectivo valorr
+}}
+
+
+
+
 
 
 
@@ -396,21 +444,21 @@ void contador (){
 
 int main(int argc, char const *argv[])
 {
-	archivo=fopen("prueba.txt","r+");
-	contador();
-	reconocedor();
-	int conta=1;
-	/*while (_totalIncludeUsuario>0){
-		printf("Corrida%d\n",conta);
-		reconocedor();
+	original=fopen(argv[1],"r+");
+	tmp = fopen ("tmp.c","w+");
 	
-		contador();
-		conta ++;
 
-	}*/
 	
 	
-	//reconocedor();
+
+	incluir_include(original);
+	contador(tmp);
+	fclose(original);
+	fclose(tmp);
+	original=(fopen("tmp.c","r+"));
+	tmp = fopen("listo.c","w+");
+
+	reconocedor(original,tmp);
 
 	return 0;
 }

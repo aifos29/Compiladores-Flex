@@ -18,6 +18,9 @@ enum yytokentype {
 	RIGHTBRACKET = 16,
 	DOLLAR = 17,
 	MODULE = 18,
+	AMPERSAND = 19,
+	UNDERSCORE = 20,
+	AND = 21,
 };
 int yylval;
 FILE* beamerFile;
@@ -68,6 +71,8 @@ int totalError;
 "main"	    {return KEYWORD;}
 "printf"	{return KEYWORD;}
 "fprintf"	{return KEYWORD;}
+"scanf"	{return KEYWORD;}
+"system"	{return KEYWORD;}
 
 "+" { return OPERATION; }
 "++" { return OPERATION; }
@@ -80,10 +85,13 @@ int totalError;
 ">" { return GREATERTHAN; }
 "=" { return OPERATION; }
 "==" { return OPERATION; }
+"!=" { return OPERATION; }
 "<=" { return LESSEQUAL; }
 ">=" { return GREATEREQUAL; }
-"!=" { return OPERATION; }
-
+"&"	 { return AMPERSAND; }
+"&&" { return AND; }
+"||" { return OPERATION;}
+"|" { return OPERATION; }
 
 "(" { return SYMBOL; }
 ")" { return SYMBOL; }
@@ -93,14 +101,17 @@ int totalError;
 "," { return SYMBOL; }
 "{"	{ return LEFTBRACKET; }
 "}"	{ return RIGHTBRACKET; }
-"|" { return SYMBOL; }
+"!" { return SYMBOL; }
 ":" { return SYMBOL; }
 "'"	{ return SYMBOL; }
 "$"	{ return DOLLAR; }
+"\""	{ return SYMBOL; }
+"_"	{ return UNDERSCORE; }
+
 
 [0-9]+ { yylval = atoi(yytext); return CONSTANT; }
 
-"_"*[A-z]+"_"*[0-9]* {return IDENTIFICATOR;}
+[a-zA-Z][_a-zA-Z0-9]* {return IDENTIFICATOR;}
 
 \n { return SALTO; }
 
@@ -131,7 +142,7 @@ void startBeamer(){
 	fprintf(beamerFile,"\\date{\\today}\n");
 	fprintf(beamerFile,"\\begin{document} \n");
 	fprintf(beamerFile,"\\maketitle \n");
-	fprintf(beamerFile,"\\begin{frame} \n");
+	fprintf(beamerFile,"\\begin{frame}[allowframebreaks] \n");
 	fprintf(beamerFile,"\\frametitle{ Proceso de Scanning y Herramienta Flex} \n \n");
 	fprintf(beamerFile,"El analisis lexico es el encargado de separar por tokens la cadena de texto ingresada.");
 	fprintf(beamerFile,"Un token es una unidad lexica que tiene coherencia en un lenguaje de programación. \\newline \n");
@@ -143,7 +154,7 @@ void startBeamer(){
 	fprintf(beamerFile,"Simboles especiales: Comas, parentesis entre otros \\newline \n");
 	fprintf(beamerFile,"Operadores: Signos aritmetricos basicos \\newline \n");
 	fprintf(beamerFile,"\\end{frame} \n");
-	fprintf(beamerFile,"\\begin{frame} \n");
+	fprintf(beamerFile,"\\begin{frame}[allowframebreaks] \n");
 	fprintf(beamerFile,"\\frametitle{Programa Fuente} \n");
 }
 
@@ -151,6 +162,8 @@ void endBeamer(){
   fprintf(beamerFile,"\\end{document} \n");
   fclose(beamerFile);
   system("pdflatex beamer.tex");
+	remove("tmp.c");
+	remove("listo.c");
   system("evince beamer.pdf");
 }
 
@@ -178,18 +191,38 @@ void createHistogram(){
 
 
 void createPastel(int _symbol,int _keyword,int _operation,int _constant,int _identificator,int _error){
-  fprintf(beamerFile,"\\begin{frame}{Diagrama Pastel} \n");
-	fprintf(beamerFile,"\\begin{tikzpicture}");
-	fprintf(beamerFile,"\\pie[text=legend]{");
-	fprintf(beamerFile,"%i/Keyw.,",_keyword);
-	fprintf(beamerFile,"%i/Operat.,",_operation);
-	fprintf(beamerFile,"%i/Symb.,",_symbol);
-	fprintf(beamerFile,"%i/Const.,",_constant);
-	fprintf(beamerFile,"%i/Ident.,",_identificator);
-	fprintf(beamerFile,"%i/Error}",_error);
-
-	fprintf(beamerFile,"\\end{tikzpicture}");
-  fprintf(beamerFile,"\\end{frame} \n");
+fprintf(beamerFile,"\\begin{frame}{Diagrama Pastel} \n");
+fprintf(beamerFile,"\\def\\angle{0}");
+fprintf(beamerFile,"\\def\\radius{2}");
+fprintf(beamerFile,"\\def\\labelradius{3}");
+fprintf(beamerFile,"\\def\\cyclelist{{\"purple\",\"green\",\"olive\",\"blue\",\"orange\",\"red\"}}");
+fprintf(beamerFile,"\\centering");
+fprintf(beamerFile,"\\newcount\\cyclecount \\cyclecount=-1");
+fprintf(beamerFile,"\\newcount\\ind \\ind=-1");
+fprintf(beamerFile,"\\begin{tikzpicture}");
+fprintf(beamerFile,"\\foreach \\percent/\\name in {");
+fprintf(beamerFile,"%i/Keyw.,",_keyword);
+fprintf(beamerFile,"%i/Operat.,",_operation);
+fprintf(beamerFile,"%i/Symb.,",_symbol);
+fprintf(beamerFile,"%i/Const.,",_constant);
+fprintf(beamerFile,"%i/Ident.,",_identificator);
+fprintf(beamerFile,"%i/Error",_error);
+fprintf(beamerFile,"} {\\ifx\\percent\\empty\\else");
+fprintf(beamerFile,"\\global\\advance\\cyclecount by 1");
+fprintf(beamerFile,"\\global\\advance\\ind by 1");
+fprintf(beamerFile,"\\ifnum6<\\cyclecount");
+fprintf(beamerFile,"\\global\\cyclecount=0");
+fprintf(beamerFile,"\\global\\ind=0");
+fprintf(beamerFile,"\\fi");
+fprintf(beamerFile,"\\pgfmathparse{\\cyclelist[\\the\\ind]}");
+fprintf(beamerFile,"\\edef\\color{\\pgfmathresult}");
+fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius) arc (\\angle:\\angle+\\percent*3.6:\\radius) -- cycle;");
+fprintf(beamerFile,"\\draw[draw=gray, shorten >=2pt] (\\angle+0.5*\\percent*3.6:\\labelradius) node {\\name~[\\percent\\%%]} edge (\\angle+0.5*\\percent*3.6:\\radius);");
+fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.6}");
+fprintf(beamerFile,"\\xdef\\angle{\\pgfmathresult}");
+fprintf(beamerFile,"\\fi};");
+fprintf(beamerFile,"\\end{tikzpicture}");
+fprintf(beamerFile,"\\end{frame} \n");
 }
 
 void getPorcentage(){
@@ -206,7 +239,7 @@ void getPorcentage(){
 void main(int argc, char **argv)
 {
 	int tok;
-	yyin = fopen ("prueba.c","r+");
+	yyin = fopen ("listo.c","r+");
   startBeamer();
 	tok = yylex();
 
@@ -253,6 +286,11 @@ void main(int argc, char **argv)
 				totalOperation++;
 				totalTokens++;
 				break;
+			case AMPERSAND:
+				fprintf(beamerFile, "\\textcolor{%s}{\\&} \n", "green");
+				totalOperation++;
+				totalTokens++;
+				break;
 			case SALTO:
         fprintf(beamerFile,"\\newline \n");
 				break;
@@ -261,11 +299,17 @@ void main(int argc, char **argv)
         totalIdentificator++;
 				totalTokens++;
         break;
+
 			case SYMBOL:
         writeBeamer("olive", yytext);
         totalSymbol++;
 				totalTokens++;
         break;
+			case UNDERSCORE:
+				fprintf(beamerFile, "\\textcolor{%s}{\\_ } \n", "olive");
+				totalSymbol++;
+				totalTokens++;
+				break;
 			case DOLLAR:
 	      fprintf(beamerFile, "\\textcolor{%s}{\\$ } \n", "olive");
 	      totalSymbol++;
@@ -282,7 +326,7 @@ void main(int argc, char **argv)
 				totalTokens++;
 		    break;
 			case ERROR:
-				writeBeamer("red", yytext);
+				writeBeamer("red", "Symbol not identified");
 				totalError++;
 				break;
 			default:
