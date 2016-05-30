@@ -1,14 +1,10 @@
-int main ( ) {
-   int grossSalary , basic , da, ta;
 
-   printf ( " Enter basic salary : " );
-   scanf ( " %d " , & basic );
+#include "a.h" 
+#define x 3
+#define y 4
+int main () { 
+	int factorial, result=1; 
 
-   da = (10 * basic) / 100;
-   ta = (12 * basic) / 100;
+	hola = x
+	adios = y
 
-   grossSalary = basic + da + ta;
-
-   printf("Gross salary : %d", gross_salary);
-   return (0);
-}

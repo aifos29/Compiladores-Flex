@@ -21,6 +21,8 @@ enum yytokentype {
 	AMPERSAND = 19,
 	UNDERSCORE = 20,
 	AND = 21,
+	NUM = 22,
+	BACKSLASH = 23,
 };
 int yylval;
 FILE* beamerFile;
@@ -92,6 +94,7 @@ int totalError;
 "&&" { return AND; }
 "||" { return OPERATION;}
 "|" { return OPERATION; }
+"?:"	{ return OPERATION; }
 
 "(" { return SYMBOL; }
 ")" { return SYMBOL; }
@@ -99,14 +102,17 @@ int totalError;
 "]" { return SYMBOL; }
 ";" { return SYMBOL; }
 "," { return SYMBOL; }
+"." { return SYMBOL; }
 "{"	{ return LEFTBRACKET; }
 "}"	{ return RIGHTBRACKET; }
 "!" { return SYMBOL; }
 ":" { return SYMBOL; }
 "'"	{ return SYMBOL; }
 "$"	{ return DOLLAR; }
+"\\"	{ return BACKSLASH; }
 "\""	{ return SYMBOL; }
 "_"	{ return UNDERSCORE; }
+"#" { return NUM;}
 
 
 [0-9]+ { yylval = atoi(yytext); return CONSTANT; }
@@ -162,8 +168,8 @@ void endBeamer(){
   fprintf(beamerFile,"\\end{document} \n");
   fclose(beamerFile);
   system("pdflatex beamer.tex");
-	remove("tmp.c");
-	remove("listo.c");
+  remove("tmp.c");
+  remove("listo.c");
   system("evince beamer.pdf");
 }
 
@@ -216,9 +222,9 @@ fprintf(beamerFile,"\\global\\ind=0");
 fprintf(beamerFile,"\\fi");
 fprintf(beamerFile,"\\pgfmathparse{\\cyclelist[\\the\\ind]}");
 fprintf(beamerFile,"\\edef\\color{\\pgfmathresult}");
-fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius) arc (\\angle:\\angle+\\percent*3.6:\\radius) -- cycle;");
-fprintf(beamerFile,"\\draw[draw=gray, shorten >=2pt] (\\angle+0.5*\\percent*3.6:\\labelradius) node {\\name~[\\percent\\%%]} edge (\\angle+0.5*\\percent*3.6:\\radius);");
-fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.6}");
+fprintf(beamerFile,"\\draw[fill={\\color!50},draw={\\color}] (0,0) -- (\\angle:\\radius) arc (\\angle:\\angle+\\percent*3.7:\\radius) -- cycle;");
+fprintf(beamerFile,"\\draw[draw=gray, shorten >=2pt] (\\angle+0.5*\\percent*3.7:\\labelradius) node {\\name~[\\percent\\%%]} edge (\\angle+0.5*\\percent*3.7:\\radius);");
+fprintf(beamerFile,"\\pgfmathparse{\\angle+\\percent*3.7}");
 fprintf(beamerFile,"\\xdef\\angle{\\pgfmathresult}");
 fprintf(beamerFile,"\\fi};");
 fprintf(beamerFile,"\\end{tikzpicture}");
@@ -240,7 +246,7 @@ void main(int argc, char **argv)
 {
 	int tok;
 	yyin = fopen ("listo.c","r+");
-  startBeamer();
+  	startBeamer();
 	tok = yylex();
 
 	while(tok!=EOL){
@@ -248,26 +254,26 @@ void main(int argc, char **argv)
 		switch (tok){
 			case CONSTANT:
 				writeBeamer("blue", yytext);
-        totalConstant++;
+        		totalConstant++;
 				totalTokens++;
 				break;
 			case KEYWORD:
 				writeBeamer("purple", yytext);
-        totalKeyword++;
+        		totalKeyword++;
 				totalTokens++;
 				break;
 			case OPERATION:
-        writeBeamer("green", yytext);
-        totalOperation++;
+        		writeBeamer("green", yytext);
+        		totalOperation++;
 				totalTokens++;
-        break;
+        		break;
 			case GREATEREQUAL:
 				fprintf(beamerFile, "\\textcolor{%s}{%s} \n", "green","$>=$");
 				totalOperation++;
 				totalTokens++;
 				break;
 			case GREATERTHAN:
-				fprintf(beamerFile, "\\textcolor{%s}{%s} \n", "green","$>$");
+				fprintf(beamerFile, "\\textcolor{%s}{\\textgreater} \n", "green");
 				totalOperation++;
 				totalTokens++;
 				break;
@@ -277,7 +283,7 @@ void main(int argc, char **argv)
 				totalTokens++;
 				break;
 			case LESSTHAN:
-				fprintf(beamerFile, "\\textcolor{%s}{%s} \n", "green","$<$");
+				fprintf(beamerFile, "\\textcolor{%s}{\\textless} \n", "green");
 				totalOperation++;
 				totalTokens++;
 				break;
@@ -291,40 +297,54 @@ void main(int argc, char **argv)
 				totalOperation++;
 				totalTokens++;
 				break;
+			case AND:
+				fprintf(beamerFile, "\\textcolor{%s}{\\&\\&} \n", "green");
+				totalOperation++;
+				totalTokens++;
+				break;
 			case SALTO:
-        fprintf(beamerFile,"\\newline \n");
+        		fprintf(beamerFile,"\\newline \n");
 				break;
 			case IDENTIFICATOR:
-        writeBeamer("orange", yytext);
-        totalIdentificator++;
+        		writeBeamer("orange", yytext);
+        		totalIdentificator++;
 				totalTokens++;
-        break;
-
+        		break;
 			case SYMBOL:
-        writeBeamer("olive", yytext);
-        totalSymbol++;
+		        writeBeamer("olive", yytext);
+		        totalSymbol++;
 				totalTokens++;
-        break;
+        		break;
+        	case BACKSLASH:
+				fprintf(beamerFile, "\\textcolor{%s}{\\textbackslash} \n", "olive");
+				totalSymbol++;
+				totalTokens++;
+				break;
 			case UNDERSCORE:
 				fprintf(beamerFile, "\\textcolor{%s}{\\_ } \n", "olive");
 				totalSymbol++;
 				totalTokens++;
 				break;
+			case NUM:
+				fprintf(beamerFile, "\\textcolor{%s}{\\# } \n", "olive");
+				totalSymbol++;
+				totalTokens++;
+				break;
 			case DOLLAR:
-	      fprintf(beamerFile, "\\textcolor{%s}{\\$ } \n", "olive");
-	      totalSymbol++;
+			    fprintf(beamerFile, "\\textcolor{%s}{\\$ } \n", "olive");
+			    totalSymbol++;
 				totalTokens++;
-	      break;
+	      		break;
 			case RIGHTBRACKET:
-	      fprintf(beamerFile, "\\textcolor{%s}{\\} } \n", "olive");
-	      totalSymbol++;
+	      		fprintf(beamerFile, "\\textcolor{%s}{\\} } \n", "olive");
+	      		totalSymbol++;
 				totalTokens++;
-	      break;
+	      		break;
 			case LEFTBRACKET:
 				fprintf(beamerFile, "\\textcolor{%s}{ \\{ } \n", "olive");
-		    totalSymbol++;
+		    	totalSymbol++;
 				totalTokens++;
-		    break;
+		    	break;
 			case ERROR:
 				writeBeamer("red", "Symbol not identified");
 				totalError++;
@@ -333,9 +353,8 @@ void main(int argc, char **argv)
 				break;
 		}
 		tok = yylex();
-
 	}
-  createHistogram();
+  	createHistogram();
 	getPorcentage();
-  endBeamer();
+  	endBeamer();
 }
