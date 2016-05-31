@@ -150,7 +150,7 @@ void startBeamer(){
 	fprintf(beamerFile,"\\maketitle \n");
 	fprintf(beamerFile,"\\begin{frame}[allowframebreaks] \n");
 	fprintf(beamerFile,"\\frametitle{ Proceso de Scanning y Herramienta Flex} \n \n");
-	fprintf(beamerFile,"El analisis lexico es el encargado de separar por tokens la cadena de texto ingresada.");
+	fprintf(beamerFile,"El análisis léxico es el encargado de separar por tokens la cadena de texto ingresada.");
 	fprintf(beamerFile,"Un token es una unidad lexica que tiene coherencia en un lenguaje de programación. \\newline \n");
 	fprintf(beamerFile,"En el caso del lenguaje de programación C, el lenguaje contiene 5 tokens: \\newline \n");
 	fprintf(beamerFile,"String : Cadenas de texto. \\newline \n");
@@ -159,6 +159,8 @@ void startBeamer(){
 	fprintf(beamerFile,"Palabras especiales: Palabras que son usadas por el lenguaje \\newline \n");
 	fprintf(beamerFile,"Simboles especiales: Comas, parentesis entre otros \\newline \n");
 	fprintf(beamerFile,"Operadores: Signos aritmetricos basicos \\newline \n");
+	fprintf(beamerFile,"\\textbf{Flex} es una herramienta que genera un scanner en lenguaje C.");
+	fprintf(beamerFile,"Su funcionamiento consiste en declarar los tokens validos en un lenguaje especifico y decirle que hacer cuando reconozca uno de ellos. \n");
 	fprintf(beamerFile,"\\end{frame} \n");
 	fprintf(beamerFile,"\\begin{frame}[allowframebreaks] \n");
 	fprintf(beamerFile,"\\frametitle{Programa Fuente} \n");
